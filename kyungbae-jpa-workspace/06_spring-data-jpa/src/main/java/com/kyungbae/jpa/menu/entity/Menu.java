@@ -1,9 +1,6 @@
 package com.kyungbae.jpa.menu.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @NoArgsConstructor
@@ -17,6 +14,7 @@ import lombok.*;
 public class Menu {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "menu_code")
     private Integer menuCode;
     @Column(name = "menu_name")

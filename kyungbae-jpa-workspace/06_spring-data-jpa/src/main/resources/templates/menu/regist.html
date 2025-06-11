@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>regist</title>
+</head>
+<body>
+  <h2>신규 메뉴 등록</h2>
+  <hr>
+
+  <form th:action="@{/menu/regist}" method="post">
+    메뉴명: <input type="text" name="menuName"> <br>
+    메뉴가격: <input type="number" name="menuPrice"> <br>
+    카테고리:
+    <select name="categoryCode" id="category">
+      <!-- 카테고리 목록 데이터 -->
+    </select> <br>
+    판매상태:
+    <select name="orderableStatus" id="">
+      <option value="Y">판매가능</option>
+      <option value="N">판매불가</option>
+    </select>
+    <br>
+    <button type="submit">전송</button>
+  </form>
+
+  <script>
+    // 현재 페이지 상에 필요한 카테고리 목록 조회 (비동기)
+    fetch('[[@{/menu/categories}]]')
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        const $categorySelect = document.getElementById('category');
+
+        data.forEach(category => {
+          const $option = document.createElement('option');
+          $option.textContent = category.categoryName;
+          $option.value = category.categoryCode;
+          $categorySelect.appendChild($option);
+        });
+
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>modify</title>
+</head>
+<body>
+  <h2>메뉴 수정</h2>
+  <hr>
+  <form th:action="@{/menu/modify}" method="post">
+    <input type="hidden" name="menuCode" th:value="${menu.menuCode}">
+    메뉴명: <input type="text" name="menuName" th:value="${menu.menuName}"> <br>
+    메뉴가격: <input type="number" name="menuPrice" th:value="${menu.menuPrice}"> <br>
+    카테고리:
+    <select name="categoryCode" id="category">
+      <!-- 카테고리 목록 데이터 -->
+    </select> <br>
+    판매상태:
+    <select name="orderableStatus" id="orderable">
+      <option value="Y">판매가능</option>
+      <option value="N">판매불가</option>
+    </select>
+    <br>
+    <button type="submit">수정</button>
+  </form>
+
+  <script>
+    fetch('[[@{/menu/categories}]]')
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        const $categorySelect = document.getElementById('category');
+
+        data.forEach(category => {
+          const $option = document.createElement('option');
+          $option.textContent = category.categoryName;
+          $option.value = category.categoryCode;
+          $option.selected = category.categoryCode == `[[${menu.categoryCode}]]`
+          $categorySelect.appendChild($option);
+        });
+
+      });
+    document.getElementById('orderable').value = `[[${menu.orderableStatus}]]`
+  </script>
+
+</body>
+</html>

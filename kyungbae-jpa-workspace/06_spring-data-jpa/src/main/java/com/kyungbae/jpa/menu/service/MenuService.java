@@ -1,24 +1,33 @@
 package com.kyungbae.jpa.menu.service;
 
+import com.kyungbae.jpa.dto.CategoryDto;
 import com.kyungbae.jpa.dto.MenuDto;
+import com.kyungbae.jpa.menu.entity.Category;
 import com.kyungbae.jpa.menu.entity.Menu;
+import com.kyungbae.jpa.menu.repository.CategoryRepository;
 import com.kyungbae.jpa.menu.repository.MenuRepository;
+import com.kyungbae.jpa.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class MenuService {
 
+    private final PageUtil pageUtil;
     private final MenuRepository menuRepository;
     private final ModelMapper modelMapper;
+    private final CategoryRepository categoryRepository;
 
     // 1. findById
     public MenuDto findMenuByCode(int menuCode) {
@@ -42,11 +51,84 @@ public class MenuService {
 //        List<Menu> menuList = menuRepository.findAll();
 
         // 2) findAll(Sort) : List<T> - 정렬기준을 전달해서 실행
-        List<Menu> menuList = menuRepository.findAll(Sort.by("menuCode").descending());
+//        List<Menu> menuList = menuRepository.findAll(Sort.by("menuCode").descending()); // 정렬기준이 한개일때
+        List<Menu> menuList = menuRepository.findAll(Sort.by( // 정렬기준이 여러개일 경우
+                Sort.Order.asc("categoryCode"), // 첫번째 기준
+                Sort.Order.desc("menuPrice")    // 두번째 기준
+        ));
 
         return menuList.stream()
                 .map(menu -> modelMapper.map(menu, MenuDto.class))
                 .toList();
 //                .collect(Collectors.toList());
+    }
+
+    public Map<String, Object> findMenuList(Pageable pageable) {
+
+        // 3) findAll(Pageable) : Page<T> - 페이지 정보와 해당 요청 페이지에 필요한 엔티티목록조회결과(List<T>)가 담긴 Page 객체 반환
+        Page<Menu> menuPage = menuRepository.findAll(pageable);
+
+        /*
+        log.info("total count: {}", menuPage.getTotalElements());
+        log.info("display: {}", menuPage.getSize());
+        log.info("total page: {}", menuPage.getTotalPages());
+        log.info("current page: {}", menuPage.getNumber() + 1);
+        log.info("is first page: {}", menuPage.isFirst());
+        log.info("is last page: {}", menuPage.isLast());
+        log.info("sort: {}", menuPage.getSort());
+        log.info("current page data num: {}", menuPage.getNumberOfElements());
+        log.info("content: {}", menuPage.getContent());
+         */
+
+        Map<String, Object> map = pageUtil.getPageInfo(menuPage, 5);
+        map.put("menuList",
+                menuPage.getContent()
+                        .stream()
+                        .map(menu -> modelMapper.map(menu, MenuDto.class))
+                        .toList()
+        );
+
+        return map;
+    }
+
+    // 3. Native Query 사용
+    public List<CategoryDto> findCategoryList() {
+//        List<Category> categories = categoryRepository.findAll(); // 상위카테고리 포함 조회
+        List<Category> categories = categoryRepository.findAllSubCategory();
+
+//        log.info("categories: {}", categories);
+        // List<Category> -> List<CategoryDto>
+        return categories.stream()
+                .map((element) -> modelMapper.map(element, CategoryDto.class))
+                .toList();
+    }
+
+    @Transactional
+    public void registMenu(MenuDto newMenu) {
+        menuRepository.save(modelMapper.map(newMenu, Menu.class));
+    }
+
+    @Transactional
+    public void modifyMenu(MenuDto modifyMenu) {
+        // 조회 => setter 이용해서 필드 반영 => commit
+        Menu menu = menuRepository.findById(modifyMenu.getMenuCode())
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 메뉴 번호입니다."));
+
+        // setter 이용해서 엔티티 필드 변경
+        menu.setMenuName(modifyMenu.getMenuName());
+        menu.setMenuPrice(modifyMenu.getMenuPrice());
+        menu.setCategoryCode(modifyMenu.getCategoryCode());
+        menu.setOrderableStatus(modifyMenu.getOrderableStatus());
+        // setter에 의해서 변경된 값을 스냅샷과 비교해서
+        // 변경감지 되면 update쿼라가 쓰기 지연 저장소에 저장
+        // commit 시점에서 db에 반영
+    }
+
+    public void removeMenu(int code) {
+//        menuRepository.deleteById(code);
+
+        Menu menu = menuRepository.findById(code)
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 메뉴 번호입니다."));
+        menuRepository.delete(menu);
     }
 }
