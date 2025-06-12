@@ -16,8 +16,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -94,7 +96,8 @@ public class MenuService {
     // 3. Native Query 사용
     public List<CategoryDto> findCategoryList() {
 //        List<Category> categories = categoryRepository.findAll(); // 상위카테고리 포함 조회
-        List<Category> categories = categoryRepository.findAllSubCategory();
+//        List<Category> categories = categoryRepository.findAllSubCategory();
+        List<Category> categories = categoryRepository.findByRefCategoryCodeIsNotNull();
 
 //        log.info("categories: {}", categories);
         // List<Category> -> List<CategoryDto>
@@ -111,6 +114,8 @@ public class MenuService {
     @Transactional
     public void modifyMenu(MenuDto modifyMenu) {
         // 조회 => setter 이용해서 필드 반영 => commit
+
+        // 조회된 엔티티 -> 영속 컨텍스트에 저장 (@Id-@Entity, 스냅샷(복사본))
         Menu menu = menuRepository.findById(modifyMenu.getMenuCode())
                 .orElseThrow(() -> new IllegalArgumentException("잘못된 메뉴 번호입니다."));
 
@@ -120,7 +125,7 @@ public class MenuService {
         menu.setCategoryCode(modifyMenu.getCategoryCode());
         menu.setOrderableStatus(modifyMenu.getOrderableStatus());
         // setter에 의해서 변경된 값을 스냅샷과 비교해서
-        // 변경감지 되면 update쿼라가 쓰기 지연 저장소에 저장
+        // 변경감지 되면 update쿼리가 쓰기 지연 저장소에 저장
         // commit 시점에서 db에 반영
     }
 
@@ -130,5 +135,36 @@ public class MenuService {
         Menu menu = menuRepository.findById(code)
                 .orElseThrow(() -> new IllegalArgumentException("잘못된 메뉴 번호입니다."));
         menuRepository.delete(menu);
+    }
+
+    public List<MenuDto> findMenuByMenuPrice(int price) {
+
+        // Native Query 파라미터 바인딩
+//        List<Menu> menuList = menuRepository.findByMenuPrice(price);
+
+        // 쿼리메소드
+        List<Menu> menuList = menuRepository.findByMenuPriceEquals(price);
+
+        return menuList.stream()
+                .map((element) -> modelMapper.map(element, MenuDto.class))
+                .toList();
+
+    }
+
+    public List<MenuDto> findMenuByName(String name){
+        List<Menu> menuList = menuRepository.findByMenuNameContaining(name);
+
+        return menuList.stream()
+                .map((element) -> modelMapper.map(element, MenuDto.class))
+                .toList();
+    }
+
+    public List<MenuDto> findMenuByPriceAndName(String[] queryArr) {
+        // 전달된 가격 이상 그리고 메뉴명이 포함된
+        log.info(Arrays.toString(queryArr));
+        return menuRepository.findByMenuPriceGreaterThanEqualAndMenuNameContaining(Integer.parseInt(queryArr[0]), queryArr[1])
+                .stream()
+                .map((element) -> modelMapper.map(element, MenuDto.class))
+                .collect(Collectors.toList());
     }
 }

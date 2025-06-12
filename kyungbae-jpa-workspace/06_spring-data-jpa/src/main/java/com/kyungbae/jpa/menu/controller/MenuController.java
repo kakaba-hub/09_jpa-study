@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -122,6 +123,24 @@ public class MenuController {
     public String removeMenu(int code){
 
         menuService.removeMenu(code);
+
+        return "redirect:/";
+    }
+
+    @GetMapping("/search")
+    public String searchMenu(String type, String query){
+
+        List<MenuDto> menuList = new ArrayList<>();
+        if ("price".equals(type)) {
+            menuList = menuService.findMenuByMenuPrice(Integer.parseInt(query));
+        } else if ("name".equals(type)) {
+            menuList = menuService.findMenuByName(query);
+        } else if ("both".equals(type)) { // String query = 10000, 마늘
+            log.info(query);
+            menuList = menuService.findMenuByPriceAndName(query.split(","));
+        }
+
+        menuList.forEach(System.out::println);
 
         return "redirect:/";
     }
