@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+  <h2>CLOVA OCR TEST</h2>
+
+  <form action="" id="ocr-form">
+    <select name="type" id="">
+      <option value="general">일반</option>
+      <option value="template">템플릿</option>
+    </select>
+    <input type="file" name="file" accept="image/*">
+    <input type="button" value="업로드">
+  </form>
+  <script>
+    document.getElementById('ocr-btn').addEventListener('click', (e) -> {
+
+      let formData = new FormData(document.getElementById('ocr-form'));
+
+      fetch('[[@{/upload}]]', {
+        method: 'POST',
+        body: formData
+      })
+    })
+  </script>
+</body>
+</html>
