@@ -16,6 +16,10 @@ public class OCRUtil {
     private String GENERAL_OCR_URL;
     @Value("${ncp.clova-ocr.general.secretKey}")
     private String GENERAL_OCR_SECRET_KEY;
+    @Value("${ncp.clova-ocr.template.url}")
+    private String TEMPLATE_OCR_URL;
+    @Value("${ncp.clova-ocr.template.secretKey}")
+    private String TEMPLATE_OCR_SECRET_KEY;
 
     /**
      * NCP Clova OCR API 호출 후 응답 결과 반환용 메소드
@@ -26,8 +30,11 @@ public class OCRUtil {
      */
     public String processOCR(String type, String path){
 
+        final String OCR_URL = "general".equals(type) ? GENERAL_OCR_URL : "template".equals(type) ? TEMPLATE_OCR_URL : null;
+        final String OCR_SECRET_KEY = "general".equals(type) ? GENERAL_OCR_SECRET_KEY : "template".equals(type) ? TEMPLATE_OCR_SECRET_KEY : null;
+
         try {
-            URL url = new URL(GENERAL_OCR_URL);
+            URL url = new URL(OCR_URL);
             HttpURLConnection con = (HttpURLConnection)url.openConnection();
             con.setUseCaches(false);
             con.setDoInput(true);
@@ -36,7 +43,7 @@ public class OCRUtil {
             con.setRequestMethod("POST");
             String boundary = "----" + UUID.randomUUID().toString().replaceAll("-", "");
             con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-            con.setRequestProperty("X-OCR-SECRET", GENERAL_OCR_SECRET_KEY);
+            con.setRequestProperty("X-OCR-SECRET", OCR_SECRET_KEY);
 
             /* JSON 방식
             JSONObject json = new JSONObject(); // Map과 대응
@@ -88,9 +95,7 @@ public class OCRUtil {
             }
             br.close();
 
-            System.out.println(response);
-
-            return response.toString();
+            return response.toString(); // JSON 문자열
 
         } catch (Exception e) {
             e.printStackTrace();
